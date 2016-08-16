@@ -20,7 +20,8 @@ End resources and json type
 
 {
     "userId": "daniyal",
-    "piId": "pi111"
+    "piId": "pi111",
+    "deviceStatus":"pi111"
    
 }
 
