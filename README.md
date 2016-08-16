@@ -9,7 +9,7 @@ home automation socket
 
 End resources and json type 
 
-/users
+/signup
 {
 "userId":"daniyal",
 "password":"password",
