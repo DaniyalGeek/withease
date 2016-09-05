@@ -8,25 +8,7 @@ home automation socket
 
 
 End resources and json type 
-
-/signup
-{
-"userId":"daniyal",
-"password":"password",
-"email":"dani@gmail.com"
-}
-
-/pidetail
-
-{
-    "userId": "daniyal",
-    "piId": "pi111",
-    "deviceStatus":"pi111"
-   
-}
-
 /pinstate
-
 {
             	"deviceStatusId":"pi111",
  							"deviceState":"on",
@@ -35,5 +17,16 @@ End resources and json type
  							"pin3":"off",
  							"pin4":"off",
  							"pin5":"on"
-   
 }
+1. https://withease-withease.c9users.io/signup
+form fields (userId,password,email)
+
+2. https://withease-withease.c9users.io/authenticate
+form fields (userId,password)
+get access token apply this token in header with x-access-token and make calls
+
+3. https://withease-withease.c9users.io/state
+json data (userId,piid,state,pin,deviceTitle,pinTitle,timeStamp)
+
+4. https://withease-withease.c9users.io/pidetail
+json data (userId,deviceTitle,piId)
