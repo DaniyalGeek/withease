@@ -13,9 +13,9 @@ var users =function (){
  					var post=function (req,res){ 
  								db('users').create(req.body).exec(function(err){ 
  									if(err){ 
- 										res.status(500).send(err); 
+ 										res.json({"success":false,"message":"This username already exist."}); 
  									}else{ 
- 										res.status(201).send('user has been created'); 
+ 										res.status(201).json({"success":true,"message":"User has been created"}); 
  									} 
  								});	 
  							}; 
