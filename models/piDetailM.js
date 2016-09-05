@@ -6,6 +6,7 @@ module.exports = {
  						attributes: {
  							
  							"socketId":"string",
+ 							"deviceTitle":"string",
  							"piId":{type:"string",primaryKey:true},
  							userId: {
 							      model: 'users'
