@@ -11,22 +11,24 @@ app.use(bodyParser.urlencoded({ extended: true }));
  objOn= {"state":"on","pin":""};
  objOff= {"state":"off"};
 
-app.use('/pidetail',require('./routers/piDetailR.js'));
-app.use('/pinstate',require('./routers/pinStateR.js'));
-app.use('/users',require('./routers/usersR.js'));
+//for signup
+app.use('/signup',require('./routers/usersR.js'));
+
+
+//for login
 app.post('/authenticate', function(req, res) {
 
   // find the user
   db('users').findOne({userId: req.body.userId}).exec(function(err,user){ 
                     if(err){ 
-                      res.status(500).send(err); 
+                      res.send(err); 
                     }else{ 
                        if (!user) {
-                        res.json({ success: false, message: 'Authentication failed. User not found.' });
+                        res.json({ success: false, message: 'Please Enter correct Username' });
                       } else if (user) {
                         // check if password matches
                         if (user.password != req.body.password) {
-                          res.json({ success: false, message: 'Authentication failed. Wrong password.' });
+                          res.json({ success: false, message: 'Please Enter correct Password!' });
                         } else {
                           // if user is found and password is right
                           // create a token
@@ -44,10 +46,11 @@ app.post('/authenticate', function(req, res) {
                   });  
 
 });
+
 io.sockets.on('connection', function(socket) {
   console.log('connection');
   console.log(socket.id);
-   console.log(socket.a);
+
 
     // Register your client with the server, providing your username
   // io.sockets.on('connection', function (socket) { 
@@ -58,14 +61,8 @@ io.sockets.on('connection', function(socket) {
                   if(err){  
                     res.status(500).send(err);  
                   }else{  
-                       // db('pidetail').findOne({piId: data.piId}).exec(function(err,data){ 
-                       // if(err){ 
-                       //  console.log(err); 
-                       // }else{ 
-
-                        console.log(JSON.stringify(data)+"Socket is Added");  
-                    //   }  
-                    // }); 
+ 
+                     //   console.log(JSON.stringify(data)+"Socket is Added");  
                   }  
                 }); 
   });
@@ -100,83 +97,105 @@ app.use(function(req, res, next) {
     
   }
 });
-  app.get('/:name/on/:pin/:piid',function(req,res){
-    console.log(req.params.name+"i am username");
+//for device detail which users purchase which device
+app.use('/pidetail',require('./routers/piDetailR.js'));
+//for pin status
+app.use('/pinstate',require('./routers/pinStateR.js'));
+//event logs
+app.use('/eventslog',require('./routers/eventsLogR.js'));
+//userdevices
+app.use('/userdevices',require('./routers/userDevicesR.js'));
+//post to eventlogs, pidetail states,
+  app.post('/state',function(req,res){
+   console.log(JSON.stringify(req.body)+"i am username");
                               
-                                       db('pidetail').findOne({piId: req.params.piid,userId:req.params.name}).populate("deviceStatus").exec(function(err,data){ 
+                                       db('pidetail').findOne({piId: req.body.piid,userId:req.body.userId}).populate("deviceStatus").exec(function(err,data){ 
                                               if(err){ 
                                                 res.status(500).send(err); 
                                               }else{ 
                                                   if(data != null)
                                                   {
-
-                                                     objOn.pin =req.params.pin;
+                                                    objOn.pin =req.body.pin;
+                                                     objOff.pin = req.body.pin;
                                                      if(io.sockets.sockets[data.socketId]!=undefined){
                                                              // console.log(io.sockets.sockets[data.socketId]); 
                                                                 if(data.socketId)
                                                                 {
-                                                                 console.log(data.socketId);
-                                                                 io.sockets.connected[data.socketId].emit("add-message", objOn);
+                                                                    if( req.body.state == "ON" )
+                                                                    {
+                                                                         console.log(data.socketId);
+                                                                         io.sockets.connected[data.socketId].emit("add-message", objOn);
+                                                                          pin = "pin"+req.body.pin; 
+                                                                          console.log(pin)
+                                                                            db('pinstate').update({deviceStatusId:req.body.piid},{[pin]:req.body.state}).exec(function (err, data){  
+                                                             									if(err){  
+                                                             										res.status(500).send(err);  
+                                                             									}else{  
+                                                             										db('pinstate').findOne({deviceStatusId:req.params.id}).exec(function(err,data){  
+                                                             											if(err){  
+                                                             												res.status(500).send(err);  
+                                                             											}else{  
+                                                             												res.json(data)  
+                                                             											}  
+                                                             										}); 
+                                                             										db('eventlog').create(req.body).exec(function(err,data){ 
+                                                                   									if(err){ 
+                                                                   									//	res.status(500).send(err); 
+                                                                   									}else{ 
+                                                                   								//		res.status(201).json(data); 
+                                                                   									} 
+                                                                   								});	
+                                                             									}  
+                                                             								});  
+
+                                                                    }
+                                                                    else if( req.body.state == "OFF"){
+                                                                         console.log(data.socketId);
+                                                                         io.sockets.connected[data.socketId].emit("add-message", objOff);
+                                                                             pin = "pin"+req.body.pin; 
+                                                                          console.log(pin)
+                                                                            db('pinstate').update({deviceStatusId:req.body.piid},{[pin]:req.body.state}).exec(function (err, data){  
+                                                             									if(err){  
+                                                             										res.status(500).send(err);  
+                                                             									}else{  
+                                                             										db('pinstate').findOne({deviceStatusId:req.params.id}).exec(function(err,data){  
+                                                             											if(err){  
+                                                             												res.status(500).send(err);  
+                                                             											}else{  
+                                                             												res.json(data)  
+                                                             											}  
+                                                             										}); 
+                                                             												db('eventlog').create(req.body).exec(function(err,data){ 
+                                                                   									if(err){ 
+                                                                   									//	res.status(500).send(err); 
+                                                                   									}else{ 
+                                                                   									//	res.status(201).json(data); 
+                                                                   									} 
+                                                                   								});	
+                                                             									}  
+                                                             								});  
+  
+                                                                    }
+                                                                    
+                                                                  res.json({ success: true, message: 'state changed' });  
                                                                 }
                                                           }
                                                            else{
                                                               console.log("user is disconnected");
-                                                               
+                                                               res.json({ success: false, message: 'No state change' });
                                                           }
                                                 
                                               }
                                                 else
                                                 res.json({"status":"This Modem dosen't exist"});
                                               } 
-                                               res.json(data);
+                                                
                                             }); 
                     
       
        });
+       
 
-   app.get('/:name/off/:pin/:piid',function(req,res){
-                        
-                                       db('pidetail').findOne({piId: req.params.piid,userId:req.params.name}).populate("deviceStatus").exec(function(err,data){ 
-                                              if(err){ 
-                                                res.status(500).send(err); 
-                                              }else{ 
-                                                  if(data != null)
-                                                  {
-
-                                                     objOn.pin =req.params.pin;
-                                                     if(io.sockets.sockets[data.socketId]!=undefined){
-                                                             // console.log(io.sockets.sockets[data.socketId]); 
-                                                                if(data.socketId)
-                                                                {
-                                                                 console.log(data.socketId);
-                                                                 io.sockets.connected[data.socketId].emit("add-message", objOn);
-                                                                }
-                                                          }
-                                                           else{
-                                                              console.log("user is disconnected");
-                                                               
-                                                          }
-                                                
-                                              }
-                                                else
-                                                res.json({"status":"This Modem dosen't exist"});
-                                              } 
-                                               res.json(data);
-                                            }); 
-   
-                              
-                            
-      });
-    //   socket.on('disconnect', function() {
-    
-    //     db('pi').update({piId: user},{"socketId":""}).exec(function (err, data){  
-    //                 if(err){  
-                     
-    //                 }else{  
-    //                   console.log("disconnect");
-    //                 }  
-    //               }); 
-    //   });
 });
 
 
