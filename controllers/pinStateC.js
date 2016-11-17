@@ -20,8 +20,6 @@ var pinstate =function (){
  								});	 
  							}; 
  					var getOne=  function (req,res){ 
- 							
- 							  		
  							  		  db('pidetail').findOne({piId: req.params.id,userId:req.params.userid}).exec(function(err,data){ 
                                               if(err){ 
                                                 res.status(500).send(err); 
@@ -48,22 +46,30 @@ var pinstate =function (){
  							  		
  							  		 
  								};  
- 					var put=function (req,res){ 
- 					     					  db('pidetail').findOne({piId: req.params.id,userId:req.params.userid}).exec(function(err,data){ 
-                                              if(err){ 
-                                                res.status(500).send(err); 
-                                              }else{ 
-                                                  if(data != null)
-                                                  {
-                                                
-                                                  }else 
-                                                  {
-                                                    	res.json({"success":false,"status":"User or Modem dosen't exist"});  
-                                                  }
-                                              }
- 							  		  });
- 							
- 							};  
+ 								var put=function (req,res){  
+ 								db('pinstate').findOne({deviceStatusId:req.params.id}).exec(function (err, data){ 
+ 								 	if(err){ 
+ 										res.json({"success":false,"message":"There is some error!"});
+ 									}else{  
+ 									  for (first in req.body) break;
+ 									  for (second in data) {
+ 									    if(req.body[first].toLowerCase() == data[second].toString().toLowerCase()){
+ 									      	res.json({"success":false,"message":"This name Already exist"});
+ 									      	  return;
+ 									    }
+ 									  }
+ 									  db('pinstate').update({deviceStatusId:req.params.id},req.body).exec(function (err, data){  
+         									if(err){ 
+         										res.json({"success":false,"message":"There is some error!"});
+         									}else{
+         									  console.log("i am here");
+         										res.json({"success":true,"message":"Successfully updated!"});
+         									}  
+         								});
+ 									}  
+ 								});
+ 							};
+ 				
  					var del=function (req,res){  
  									db('pinstate').destroy({deviceStatusId:req.params.id}).exec(function (err){  
  										if(err){  

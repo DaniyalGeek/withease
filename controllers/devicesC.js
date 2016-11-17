@@ -1,6 +1,6 @@
 var pinstate =function (){ 
  					var get=function (req,res){ 
- 								db('eventlog').find({}).exec(function(err,data){ 
+ 								db('devices').find({}).exec(function(err,data){ 
  										if(err){ 
  											res.status(500).send(err); 
  										}else{ 
@@ -11,23 +11,23 @@ var pinstate =function (){
  									}); 
  							}; 
  					var post=function (req,res){ 
- 								db('eventlog').create(req.body).exec(function(err,data){ 
+ 								db('devices').create(req.body).exec(function(err,data){ 
  									if(err){ 
  										res.status(500).send(err); 
  									}else{ 
- 										res.status(201).json(data); 
+ 										res.json({success:true}); 
  									} 
  								});	 
  							}; 
  					var getOne=  function (req,res){ 
  							
- 							  		  db('eventlog').find({userId:req.params.userid}).sort({id:0}).limit(50).exec(function(err,data){ 
+ 							  		  db('devices').find({piid: req.params.piid}).exec(function(err,data){ 
                                               if(err){ 
                                                 res.status(500).send(err); 
                                               }else{ 
                                                   if(data != null)
                                                   {
-                                                     res.json({data:data});
+                                                     res.json(data);
                                                   }else 
                                                   {
                                                     	res.json({"success":false,"status":"Data not available"});  
@@ -39,7 +39,7 @@ var pinstate =function (){
  							  		 
  								};  
  					var put=function (req,res){ 
- 					     					  db('eventlog').findOne({piId: req.params.id,userId:req.params.userid}).exec(function(err,data){ 
+ 					     					  db('devices').findOne({piId: req.params.id}).exec(function(err,data){ 
                                               if(err){ 
                                                 res.status(500).send(err); 
                                               }else{ 
@@ -55,7 +55,7 @@ var pinstate =function (){
  							
  							};  
  					var del=function (req,res){  
- 									db('eventlog').destroy({id:req.params.id}).exec(function (err){  
+ 									db('devices').destroy({id:req.params.id}).exec(function (err){  
  										if(err){  
  											res.status(500).send(err);  
  										}else{  
