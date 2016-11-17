@@ -13,7 +13,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 //for signup
 app.use('/signup',require('./routers/usersR.js'));
-
+app.use('/devices',require('./routers/devicesR.js'));
 
 //for login
 app.post('/authenticate', function(req, res) {
@@ -46,26 +46,7 @@ app.post('/authenticate', function(req, res) {
                   });  
 
 });
-
-io.sockets.on('connection', function(socket) {
-  console.log('connection');
-  console.log(socket.id);
-
-
-    // Register your client with the server, providing your username
-  // io.sockets.on('connection', function (socket) { 
-      socket.on('add-pi', function(data){
-       user = data.piId;
-     
-      db('pidetail').update({piId: data.piId},{"socketId":socket.id}).exec(function (err, data){  
-                  if(err){  
-                    res.status(500).send(err);  
-                  }else{  
- 
-                     //   console.log(JSON.stringify(data)+"Socket is Added");  
-                  }  
-                }); 
-  });
+app.use('/schedule',require('./routers/scheduleR.js'));
 app.use(function(req, res, next) {
 
   // check header or url parameters or post parameters for token
@@ -105,6 +86,147 @@ app.use('/pinstate',require('./routers/pinStateR.js'));
 app.use('/eventslog',require('./routers/eventsLogR.js'));
 //userdevices
 app.use('/userdevices',require('./routers/userDevicesR.js'));
+//for setting alarm on and off
+app.use('/botusers',require('./routers/botUsersR.js'));
+
+io.sockets.on('connection', function(socket) {
+  console.log('connection');
+  console.log(socket.id);
+
+
+    // Register your client with the server, providing your username
+  // io.sockets.on('connection', function (socket) { 
+      socket.on('add-pi', function(data){
+       user = data.piId;
+     
+      db('pidetail').update({piId: data.piId},{"socketId":socket.id}).exec(function (err, data){  
+                  if(err){  
+                    res.status(500).send(err);  
+                  }else{  
+ 
+                     //   console.log(JSON.stringify(data)+"Socket is Added");  
+                  }  
+                }); 
+  });
+ app.post('/botstate',function(req,res){
+   console.log(JSON.stringify(req.body)+"i am username");
+    var check = false;
+    var pin ;
+    var body = req.body
+                                       db('pidetail').findOne({deviceTitle: req.body.deviceTitle,userId:req.body.userId}).populate("deviceStatus").exec(function(err,data){ 
+                                              if(err){ 
+                                                res.status(500).send(err); 
+                                              }else{ 
+                                                  if(data != null)
+                                                  {
+                                                    var socketId = data.socketId;
+                                                    var piId = data.piId;
+                                                    body.piid = data.piId;
+                                                    body.timeStamp = "No Time (FB)"
+                                                     db('pinstate').findOne({deviceStatusId:data.piId}).exec(function (err, data){  
+                                                                              if(err){  
+                                                                                res.status(500).send(err);  
+                                                                              }else{ 
+                                                                               
+                                                                              objOnBot= {"state":"on"};
+                                                                               objOffBot= {"state":"off"};
+                                                                              for(var i=1;i<9;i++){
+                                                                                var pinTitle = "pin"+i+"Title";
+                                                                               if(data[pinTitle] == req.body.pinTitle){
+                                                                                 console.log(data.pin1Title);
+                                                                                 check = true;
+                                                                                 pin = i;
+                                                                                 objOnBot.pin =i;
+                                                                                 objOffBot.pin = i;
+                                                                               }
+                                                                            }
+                                                                          
+                                                          if(io.sockets.sockets[socketId]!=undefined){           
+                                                             // console.log(io.sockets.sockets[data.socketId]); 
+                                                                if(check)
+                                                                {
+                                                                    if( req.body.state.toLowerCase() == "on" )
+                                                                    {
+                                                                         console.log(socketId);
+                                                                         io.sockets.connected[socketId].emit("add-message", objOnBot);
+                                                                          pin = "pin"+pin; 
+                                                                          console.log(pin)
+                                                                            db('pinstate').update({deviceStatusId:piId},{[pin]:req.body.state}).exec(function (err, data){  
+                                                             									if(err){  
+                                                             										res.status(500).send(err);  
+                                                             									}else{  
+                                                             									    console.log("i am in update");
+                                                             										db('pinstate').findOne({deviceStatusId:piId}).exec(function(err,data){  
+                                                             											if(err){  
+                                                             												res.status(500).send(err);  
+                                                             											}else{  
+                                                             											//	res.json(data)  
+                                                             											}  
+                                                             										}); 
+                                                             										
+                                                             										db('eventlog').create(body).exec(function(err,data){ 
+                                                                   									if(err){ 
+                                                                   									//	res.status(500).send(err); 
+                                                                   									}else{ 
+                                                                   								//		res.status(201).json(data); 
+                                                                   									} 
+                                                                   								});	
+                                                             									}  
+                                                             								}); 
+                                                             								res.json({ success: true, message: 'state changed' });
+                                                                    }
+                                                                     if( req.body.state.toLowerCase() == "off" )
+                                                                    {
+                                                                         console.log(socketId);
+                                                                         io.sockets.connected[socketId].emit("add-message", objOffBot);
+                                                                            pin = "pin"+pin;
+                                                                          console.log(pin)
+                                                                            db('pinstate').update({deviceStatusId:piId},{[pin]:req.body.state}).exec(function (err, data){  
+                                                             									if(err){  
+                                                             										res.status(500).send(err);  
+                                                             									}else{  
+                                                             										db('pinstate').findOne({deviceStatusId:piId}).exec(function(err,data){  
+                                                             											if(err){  
+                                                             												res.status(500).send(err);  
+                                                             											}else{  
+                                                             											//	res.json(data)  
+                                                             											}  
+                                                             										}); 
+                                                             										db('eventlog').create(body).exec(function(err,data){ 
+                                                                   									if(err){ 
+                                                                   									//	res.status(500).send(err); 
+                                                                   									}else{ 
+                                                                   								//		res.status(201).json(data); 
+                                                                   									} 
+                                                                   								});	
+                                                             									}  
+                                                             								}); 
+                                                             								res.json({ success: true, message: 'state changed' });
+                                                                    }
+
+                                                                    
+                                                                }
+                                                                else{
+                                                             
+                                                               res.json({ success: false, message: 'No such control found!' });
+                                                          } 
+                                                                
+                                                    }
+                                                            else{
+                                                              console.log("user is disconnected");
+                                                               res.json({ success: false, message: 'No state change' });
+                                                          }   
+                                                                              
+                                                   }
+                                                     });
+                                              }
+                                                else
+                                                res.json({success:false,"message":"This Modem dosen't exist"});
+                                              } 
+                                                
+                                            }); 
+ });
+
 //post to eventlogs, pidetail states,
   app.post('/state',function(req,res){
    console.log(JSON.stringify(req.body)+"i am username");
@@ -176,6 +298,33 @@ app.use('/userdevices',require('./routers/userDevicesR.js'));
                                                              								});  
   
                                                                     }
+                                                                  else if( req.body.state){
+                                                                         console.log(data.socketId);
+                                                                         io.sockets.connected[data.socketId].emit("add-message", {"state":req.body.state,"pin": req.body.pin});
+                                                                             pin = "pin"+req.body.pin; 
+                                                                          console.log(pin)
+                                                                            db('pinstate').update({deviceStatusId:req.body.piid},{[pin]:req.body.state}).exec(function (err, data){  
+                                                             									if(err){  
+                                                             										res.status(500).send(err);  
+                                                             									}else{  
+                                                             										db('pinstate').findOne({deviceStatusId:req.params.id}).exec(function(err,data){  
+                                                             											if(err){  
+                                                             												res.status(500).send(err);  
+                                                             											}else{  
+                                                             												res.json(data)  
+                                                             											}  
+                                                             										}); 
+                                                             												db('eventlog').create(req.body).exec(function(err,data){ 
+                                                                   									if(err){ 
+                                                                   									//	res.status(500).send(err); 
+                                                                   									}else{ 
+                                                                   									//	res.status(201).json(data); 
+                                                                   									} 
+                                                                   								});	
+                                                             									}  
+                                                             								});  
+  
+                                                                    }
                                                                     
                                                                   res.json({ success: true, message: 'state changed' });  
                                                                 }
@@ -187,7 +336,7 @@ app.use('/userdevices',require('./routers/userDevicesR.js'));
                                                 
                                               }
                                                 else
-                                                res.json({"status":"This Modem dosen't exist"});
+                                                res.json({success:false,"message":"This Modem dosen't exist"});
                                               } 
                                                 
                                             }); 
